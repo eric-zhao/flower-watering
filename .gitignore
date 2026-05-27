@@ -52,5 +52,11 @@ web/.dart_tool/
 # Coverage
 coverage/
 
+# Server
+server/.venv/
+server/__pycache__/
+*.pyc
+data.db
+
 # Misc
 *.log
