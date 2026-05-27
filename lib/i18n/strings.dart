@@ -97,4 +97,29 @@ class S {
         'zh': '用于记录每次浇水是谁',
         'en': 'Used to record who watered each plant',
       });
+
+  // Family Sync
+  static String get familySync => _t({'zh': '家庭共享', 'en': 'Family Sync'});
+  static String get householdPasscode =>
+      _t({'zh': '家庭口令', 'en': 'Household passcode'});
+  static String get householdPasscodeHint => _t({
+        'zh': '家人输入同一个口令即可共享植物数据',
+        'en': 'Family members who enter the same passcode share plant data',
+      });
+  static String get serverUrl => _t({'zh': '服务器地址', 'en': 'Server URL'});
+  static String get syncNow => _t({'zh': '立即同步', 'en': 'Sync now'});
+  static String get notJoined =>
+      _t({'zh': '尚未加入家庭', 'en': 'Not joined'});
+  static String pendingChanges(int n) => _t({
+        'zh': '离线 — $n 项待同步',
+        'en': 'Offline — $n pending',
+      });
+  static String syncedNMinAgo(int n) => _t({
+        'zh': '已同步 — $n 分钟前',
+        'en': 'Synced — $n min ago',
+      });
+  static String get syncedJustNow =>
+      _t({'zh': '已同步 — 刚刚', 'en': 'Synced — just now'});
+  static String syncFailed(String msg) =>
+      _t({'zh': '同步失败：$msg', 'en': 'Sync failed: $msg'});
 }

@@ -4,6 +4,7 @@ import '../i18n/strings.dart';
 import '../models/plant.dart';
 import '../services/plant_repository.dart';
 import '../services/settings_service.dart';
+import '../services/sync_service.dart';
 import '../widgets/plant_card.dart';
 import 'add_plant_screen.dart';
 import 'plant_detail_screen.dart';
@@ -14,10 +15,12 @@ class HomeScreen extends StatefulWidget {
     super.key,
     required this.repository,
     required this.settings,
+    required this.syncService,
   });
 
   final PlantRepository repository;
   final SettingsService settings;
+  final SyncService syncService;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -60,7 +63,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _openSettings() async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => SettingsScreen(settings: widget.settings),
+        builder: (_) => SettingsScreen(
+          settings: widget.settings,
+          syncService: widget.syncService,
+        ),
       ),
     );
   }
@@ -107,7 +113,10 @@ class _HomeScreenState extends State<HomeScreen> {
       body: plants.isEmpty
           ? const _EmptyState()
           : RefreshIndicator(
-              onRefresh: () async => setState(() {}),
+              onRefresh: () async {
+                await widget.syncService.runSync();
+                if (mounted) setState(() {});
+              },
               child: ListView.builder(
                 physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: plants.length,

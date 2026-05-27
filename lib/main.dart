@@ -8,9 +8,11 @@ import 'models/plant.dart';
 import 'screens/home_screen.dart';
 import 'services/plant_repository.dart';
 import 'services/settings_service.dart';
+import 'services/sync_service.dart';
 
 const _plantsBox = 'plants';
 const _settingsBox = 'settings';
+const _syncBox = 'sync';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +31,19 @@ Future<void> main() async {
     _seedDemoPlants(plantsBox);
   }
 
-  runApp(FlowerWateringApp(settings: settings, repository: repo));
+  final syncBox = await Hive.openBox(_syncBox);
+  final syncService = SyncService(syncBox, settings, repo);
+  repo.sync = syncService;
+
+  // Initial sync (no-op if no passcode yet) + 60s periodic.
+  unawaited(syncService.runSync());
+  syncService.startPeriodicSync();
+
+  runApp(FlowerWateringApp(
+    settings: settings,
+    repository: repo,
+    syncService: syncService,
+  ));
 }
 
 Future<Box<Plant>> _openOrReset() async {
@@ -44,6 +58,7 @@ Future<Box<Plant>> _openOrReset() async {
 void _seedDemoPlants(Box<Plant> box) {
   final today = DateTime.now();
   final midnight = DateTime(today.year, today.month, today.day);
+  final nowMs = today.millisecondsSinceEpoch;
   final demos = [
     Plant(
       id: 'demo-rosemary',
@@ -54,6 +69,7 @@ void _seedDemoPlants(Box<Plant> box) {
         WateringEntry(
             date: midnight.subtract(const Duration(days: 7)), by: ''),
       ],
+      updatedAt: nowMs,
     ),
     Plant(
       id: 'demo-money-tree',
@@ -64,6 +80,7 @@ void _seedDemoPlants(Box<Plant> box) {
         WateringEntry(
             date: midnight.subtract(const Duration(days: 7)), by: ''),
       ],
+      updatedAt: nowMs,
     ),
     Plant(
       id: 'demo-aloe',
@@ -74,6 +91,7 @@ void _seedDemoPlants(Box<Plant> box) {
         WateringEntry(
             date: midnight.subtract(const Duration(days: 2)), by: ''),
       ],
+      updatedAt: nowMs,
     ),
   ];
   for (final p in demos) {
@@ -86,10 +104,12 @@ class FlowerWateringApp extends StatelessWidget {
     super.key,
     required this.settings,
     required this.repository,
+    required this.syncService,
   });
 
   final SettingsService settings;
   final PlantRepository repository;
+  final SyncService syncService;
 
   @override
   Widget build(BuildContext context) {
@@ -101,8 +121,14 @@ class FlowerWateringApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
           useMaterial3: true,
         ),
-        home: HomeScreen(repository: repository, settings: settings),
+        home: HomeScreen(
+          repository: repository,
+          settings: settings,
+          syncService: syncService,
+        ),
       ),
     );
   }
 }
+
+void unawaited(Future<void> _) {}

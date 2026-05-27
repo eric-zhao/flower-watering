@@ -19,6 +19,7 @@ class Plant {
     required this.imageBytes,
     required this.frequencyDays,
     required this.history,
+    required this.updatedAt,
   });
 
   final String id;
@@ -27,11 +28,12 @@ class Plant {
   int frequencyDays;
   List<WateringEntry> history;
 
+  /// ms since epoch. Bumped when metadata changes (name / photo / frequency).
+  /// Watering inserts do NOT bump it; they sync via their own endpoint.
+  int updatedAt;
+
   bool get hasImage => imageBytes.isNotEmpty;
 
-  /// Date of the most recent watering. Falls back to creation behavior:
-  /// a plant with empty history is treated as "watered just now" so its
-  /// timer starts fresh.
   DateTime get lastWatered => history.isEmpty
       ? DateTime.now()
       : history.reduce((a, b) => a.date.isAfter(b.date) ? a : b).date;
@@ -46,7 +48,6 @@ class Plant {
 
   bool isOverdue(DateTime now) => remainingDays(now) <= 0;
 
-  /// History sorted newest first.
   List<WateringEntry> sortedHistory() {
     final list = [...history];
     list.sort((a, b) => b.date.compareTo(a.date));
@@ -58,7 +59,7 @@ class Plant {
 
 class PlantAdapter extends TypeAdapter<Plant> {
   @override
-  final int typeId = 2;
+  final int typeId = 3;
 
   @override
   Plant read(BinaryReader reader) {
@@ -66,13 +67,15 @@ class PlantAdapter extends TypeAdapter<Plant> {
     final name = reader.readString();
     final imageBytes = Uint8List.fromList(reader.readByteList());
     final frequencyDays = reader.readInt();
+    final updatedAt = reader.readInt();
     final n = reader.readInt();
     final history = <WateringEntry>[];
     for (var i = 0; i < n; i++) {
       final ts = reader.readInt();
       final by = reader.readString();
-      history
-          .add(WateringEntry(date: DateTime.fromMillisecondsSinceEpoch(ts), by: by));
+      history.add(
+        WateringEntry(date: DateTime.fromMillisecondsSinceEpoch(ts), by: by),
+      );
     }
     return Plant(
       id: id,
@@ -80,6 +83,7 @@ class PlantAdapter extends TypeAdapter<Plant> {
       imageBytes: imageBytes,
       frequencyDays: frequencyDays,
       history: history,
+      updatedAt: updatedAt,
     );
   }
 
@@ -89,6 +93,7 @@ class PlantAdapter extends TypeAdapter<Plant> {
     writer.writeString(obj.name);
     writer.writeByteList(obj.imageBytes);
     writer.writeInt(obj.frequencyDays);
+    writer.writeInt(obj.updatedAt);
     writer.writeInt(obj.history.length);
     for (final e in obj.history) {
       writer.writeInt(e.date.millisecondsSinceEpoch);
