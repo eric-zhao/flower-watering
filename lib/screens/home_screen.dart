@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/plant.dart';
 import '../services/plant_repository.dart';
 import '../widgets/plant_card.dart';
 import 'add_plant_screen.dart';
@@ -48,6 +49,30 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _confirmDelete(Plant plant) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete ${plant.name}?'),
+        content: const Text('This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      widget.repository.delete(plant.id);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final plants = widget.repository.all();
@@ -66,6 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   return PlantCard(
                     plant: plant,
                     onTap: () => _openDetail(plant.id),
+                    onDelete: () => _confirmDelete(plant),
                   );
                 },
               ),

@@ -6,10 +6,16 @@ import '../models/plant.dart';
 import 'water_level_bar.dart';
 
 class PlantCard extends StatelessWidget {
-  const PlantCard({super.key, required this.plant, required this.onTap});
+  const PlantCard({
+    super.key,
+    required this.plant,
+    required this.onTap,
+    required this.onDelete,
+  });
 
   final Plant plant;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +56,12 @@ class PlantCard extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                color: Colors.red.shade400,
+                tooltip: 'Delete plant',
+                onPressed: onDelete,
               ),
             ],
           ),
