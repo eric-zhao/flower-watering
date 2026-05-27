@@ -114,30 +114,26 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _HeroImage(bytes: plant.imageBytes),
-            const SizedBox(height: 20),
-            _InfoRow(
-              icon: Icons.schedule,
-              label: S.everyNDays(plant.frequencyDays),
-            ),
-            const SizedBox(height: 8),
-            _InfoRow(
-              icon: Icons.water_drop_outlined,
-              label: S.lastWateredOn(dateFmt.format(plant.lastWatered)),
-            ),
-            const SizedBox(height: 20),
-            WaterLevelBar(level: level, height: 20),
             const SizedBox(height: 12),
+            _MetaRow(
+              schedule: S.everyNDays(plant.frequencyDays),
+              lastWatered:
+                  S.lastWateredOn(dateFmt.format(plant.lastWatered)),
+            ),
+            const SizedBox(height: 12),
+            WaterLevelBar(level: level, height: 16),
+            const SizedBox(height: 8),
             Text(
               daysLabel,
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
@@ -147,7 +143,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                     label: Text(S.wateredToday),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 IconButton.filledTonal(
                   onPressed: () => _pickWateredDate(plant),
                   icon: const Icon(Icons.calendar_today),
@@ -155,7 +151,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             _HistorySection(plant: plant, dateFmt: dateFmt),
           ],
         ),
@@ -173,17 +169,26 @@ class _HistorySection extends StatelessWidget {
   Widget build(BuildContext context) {
     final entries = plant.sortedHistory();
     return Card(
+      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
-        leading: Icon(Icons.history, color: Colors.green.shade700),
-        title: Text(S.waterHistory),
+        dense: true,
+        visualDensity: VisualDensity.compact,
+        tilePadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+        leading: Icon(Icons.history,
+            color: Colors.green.shade700, size: 20),
+        title: Text(S.waterHistory,
+            style: Theme.of(context).textTheme.bodyMedium),
         subtitle: entries.isEmpty
-            ? Text(S.noHistoryYet)
-            : Text(dateFmt.format(entries.first.date)),
+            ? Text(S.noHistoryYet,
+                style: Theme.of(context).textTheme.bodySmall)
+            : Text(dateFmt.format(entries.first.date),
+                style: Theme.of(context).textTheme.bodySmall),
         children: entries.isEmpty
             ? [
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12),
                   child: Text(S.noHistoryYet),
                 ),
               ]
@@ -191,7 +196,8 @@ class _HistorySection extends StatelessWidget {
                 .map(
                   (e) => ListTile(
                     dense: true,
-                    leading: const Icon(Icons.water_drop, size: 18),
+                    visualDensity: VisualDensity.compact,
+                    leading: const Icon(Icons.water_drop, size: 16),
                     title: Text(dateFmt.format(e.date)),
                     subtitle: Text(
                       e.by.isEmpty ? S.unknownWaterer : S.byName(e.by),
@@ -204,18 +210,46 @@ class _HistorySection extends StatelessWidget {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.label});
-  final IconData icon;
-  final String label;
+class _MetaRow extends StatelessWidget {
+  const _MetaRow({required this.schedule, required this.lastWatered});
+  final String schedule;
+  final String lastWatered;
 
   @override
   Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.bodyMedium;
+    final iconColor = Colors.grey.shade700;
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Icon(icon, size: 20, color: Colors.grey.shade700),
-        const SizedBox(width: 8),
-        Text(label, style: Theme.of(context).textTheme.bodyLarge),
+        Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.schedule, size: 18, color: iconColor),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(schedule,
+                    style: style, overflow: TextOverflow.ellipsis),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.water_drop_outlined,
+                  size: 18, color: iconColor),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(lastWatered,
+                    style: style, overflow: TextOverflow.ellipsis),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -229,15 +263,15 @@ class _HeroImage extends StatelessWidget {
   Widget build(BuildContext context) {
     if (bytes.isEmpty) {
       return Container(
-        height: 220,
+        height: 160,
         decoration: BoxDecoration(
           color: Colors.green.shade50,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(Icons.local_florist,
-            size: 96, color: Colors.green.shade300),
+            size: 80, color: Colors.green.shade300),
       );
     }
-    return AdaptiveImage(bytes: bytes);
+    return AdaptiveImage(bytes: bytes, maxHeight: 220);
   }
 }

@@ -18,6 +18,7 @@ class AdaptiveImage extends StatefulWidget {
     this.minRatio = 3 / 5,
     this.maxRatio = 16 / 9,
     this.placeholderRatio = 4 / 3,
+    this.maxHeight,
   });
 
   final Uint8List bytes;
@@ -25,6 +26,11 @@ class AdaptiveImage extends StatefulWidget {
   final double minRatio;
   final double maxRatio;
   final double placeholderRatio;
+
+  /// Optional cap so a tall portrait image doesn't dominate the layout.
+  /// When set, portrait photos shrink to fit (becoming narrower than the
+  /// parent width, centered).
+  final double? maxHeight;
 
   @override
   State<AdaptiveImage> createState() => _AdaptiveImageState();
@@ -64,7 +70,7 @@ class _AdaptiveImageState extends State<AdaptiveImage> {
     final natural = _naturalRatio;
     final ratio = (natural ?? widget.placeholderRatio)
         .clamp(widget.minRatio, widget.maxRatio);
-    return ClipRRect(
+    Widget image = ClipRRect(
       borderRadius: BorderRadius.circular(widget.borderRadius),
       child: AspectRatio(
         aspectRatio: ratio,
@@ -75,5 +81,16 @@ class _AdaptiveImageState extends State<AdaptiveImage> {
         ),
       ),
     );
+
+    if (widget.maxHeight != null) {
+      // ConstrainedBox + Center: portrait images shrink to fit the height cap
+      // and sit centered with neutral letterbox space at the sides.
+      image = ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: widget.maxHeight!),
+        child: Center(child: image),
+      );
+    }
+
+    return image;
   }
 }
