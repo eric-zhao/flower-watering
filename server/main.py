@@ -12,9 +12,11 @@ from __future__ import annotations
 import base64
 import time
 import urllib.parse
+from pathlib import Path
 
 from fastapi import FastAPI, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from db import connect, init_db
 from models import (
@@ -234,3 +236,14 @@ def add_watering(
             ),
         )
     return {"ok": True}
+
+
+# Mount the built Flutter web app at /. Must come *after* every /api/ route
+# so the catch-all StaticFiles handler doesn't intercept API calls.
+_STATIC_DIR = Path(__file__).resolve().parent / "static"
+if _STATIC_DIR.is_dir():
+    app.mount(
+        "/",
+        StaticFiles(directory=str(_STATIC_DIR), html=True),
+        name="webapp",
+    )
