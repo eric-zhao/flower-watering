@@ -181,7 +181,9 @@ class SyncService extends ChangeNotifier {
     final base = _settings.serverUrl;
     final headers = {
       'Content-Type': 'application/json',
-      'X-Household': _settings.householdPasscode,
+      // Percent-encode so non-ASCII passcodes (e.g. Chinese) round-trip
+      // through the browser fetch API, which requires ISO-8859-1 headers.
+      'X-Household': Uri.encodeComponent(_settings.householdPasscode),
     };
     final body = jsonEncode(op.payload);
 
@@ -218,7 +220,9 @@ class SyncService extends ChangeNotifier {
     final res = await http
         .get(
           Uri.parse('$base/api/state?since=$lastSyncedAt'),
-          headers: {'X-Household': _settings.householdPasscode},
+          headers: {
+            'X-Household': Uri.encodeComponent(_settings.householdPasscode),
+          },
         )
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {

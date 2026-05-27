@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import base64
 import time
+import urllib.parse
 
 from fastapi import FastAPI, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,7 +48,9 @@ def _household(x_household: str | None) -> str:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing X-Household header",
         )
-    return x_household.strip()
+    # Clients percent-encode the header so non-ASCII passcodes (Chinese,
+    # emoji, etc.) survive the browser fetch API's ISO-8859-1 restriction.
+    return urllib.parse.unquote(x_household.strip())
 
 
 def _now_ms() -> int:
