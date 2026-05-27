@@ -1,19 +1,26 @@
+import 'dart:typed_data';
+
 import 'package:hive/hive.dart';
 
 class Plant {
   Plant({
     required this.id,
     required this.name,
-    required this.imagePath,
+    required this.imageBytes,
     required this.frequencyDays,
     required this.lastWatered,
   });
 
   final String id;
   String name;
-  String imagePath;
+
+  /// Empty when no photo has been picked.
+  Uint8List imageBytes;
+
   int frequencyDays;
   DateTime lastWatered;
+
+  bool get hasImage => imageBytes.isNotEmpty;
 
   int daysSinceWatered(DateTime now) =>
       _midnight(now).difference(_midnight(lastWatered)).inDays;
@@ -30,14 +37,14 @@ class Plant {
 
 class PlantAdapter extends TypeAdapter<Plant> {
   @override
-  final int typeId = 0;
+  final int typeId = 1;
 
   @override
   Plant read(BinaryReader reader) {
     return Plant(
       id: reader.readString(),
       name: reader.readString(),
-      imagePath: reader.readString(),
+      imageBytes: Uint8List.fromList(reader.readByteList()),
       frequencyDays: reader.readInt(),
       lastWatered: DateTime.fromMillisecondsSinceEpoch(reader.readInt()),
     );
@@ -47,7 +54,7 @@ class PlantAdapter extends TypeAdapter<Plant> {
   void write(BinaryWriter writer, Plant obj) {
     writer.writeString(obj.id);
     writer.writeString(obj.name);
-    writer.writeString(obj.imagePath);
+    writer.writeByteList(obj.imageBytes);
     writer.writeInt(obj.frequencyDays);
     writer.writeInt(obj.lastWatered.millisecondsSinceEpoch);
   }

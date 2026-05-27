@@ -1,6 +1,5 @@
-import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -111,7 +110,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _HeroImage(imagePath: plant.imagePath),
+            _HeroImage(bytes: plant.imageBytes),
             const SizedBox(height: 20),
             _InfoRow(
                 icon: Icons.schedule,
@@ -172,31 +171,30 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _HeroImage extends StatelessWidget {
-  const _HeroImage({required this.imagePath});
-  final String imagePath;
+  const _HeroImage({required this.bytes});
+  final Uint8List bytes;
 
   @override
   Widget build(BuildContext context) {
-    final placeholder = Container(
-      height: 220,
-      decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Icon(Icons.local_florist,
-          size: 96, color: Colors.green.shade300),
-    );
-
-    if (imagePath.isEmpty || kIsWeb) return placeholder;
-
+    if (bytes.isEmpty) {
+      return Container(
+        height: 220,
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(Icons.local_florist,
+            size: 96, color: Colors.green.shade300),
+      );
+    }
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Image.file(
-        File(imagePath),
+      child: Image.memory(
+        bytes,
         height: 220,
         width: double.infinity,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => placeholder,
+        gaplessPlayback: true,
       ),
     );
   }

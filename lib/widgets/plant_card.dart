@@ -1,6 +1,5 @@
-import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/plant.dart';
@@ -32,7 +31,7 @@ class PlantCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              _Thumbnail(imagePath: plant.imagePath),
+              _Thumbnail(bytes: plant.imageBytes),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -61,31 +60,30 @@ class PlantCard extends StatelessWidget {
 }
 
 class _Thumbnail extends StatelessWidget {
-  const _Thumbnail({required this.imagePath});
-  final String imagePath;
+  const _Thumbnail({required this.bytes});
+  final Uint8List bytes;
 
   @override
   Widget build(BuildContext context) {
-    final placeholder = Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(Icons.local_florist, color: Colors.green.shade400),
-    );
-
-    if (imagePath.isEmpty || kIsWeb) return placeholder;
-
+    if (bytes.isEmpty) {
+      return Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(Icons.local_florist, color: Colors.green.shade400),
+      );
+    }
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
-      child: Image.file(
-        File(imagePath),
+      child: Image.memory(
+        bytes,
         width: 56,
         height: 56,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => placeholder,
+        gaplessPlayback: true,
       ),
     );
   }

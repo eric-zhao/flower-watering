@@ -12,11 +12,20 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   Hive.registerAdapter(PlantAdapter());
-  final box = await Hive.openBox<Plant>(_boxName);
+  final box = await _openOrReset();
   if (kDebugMode && box.isEmpty) {
     _seedDemoPlants(box);
   }
   runApp(FlowerWateringApp(repository: PlantRepository(box)));
+}
+
+Future<Box<Plant>> _openOrReset() async {
+  try {
+    return await Hive.openBox<Plant>(_boxName);
+  } catch (_) {
+    await Hive.deleteBoxFromDisk(_boxName);
+    return await Hive.openBox<Plant>(_boxName);
+  }
 }
 
 void _seedDemoPlants(Box<Plant> box) {
@@ -26,21 +35,21 @@ void _seedDemoPlants(Box<Plant> box) {
     Plant(
       id: 'demo-rosemary',
       name: 'Rosemary',
-      imagePath: '',
+      imageBytes: Uint8List(0),
       frequencyDays: 5,
       lastWatered: midnight.subtract(const Duration(days: 7)),
     ),
     Plant(
       id: 'demo-money-tree',
       name: 'Money Tree',
-      imagePath: '',
+      imageBytes: Uint8List(0),
       frequencyDays: 10,
       lastWatered: midnight.subtract(const Duration(days: 7)),
     ),
     Plant(
       id: 'demo-aloe',
       name: 'Aloe Vera',
-      imagePath: '',
+      imageBytes: Uint8List(0),
       frequencyDays: 14,
       lastWatered: midnight.subtract(const Duration(days: 2)),
     ),

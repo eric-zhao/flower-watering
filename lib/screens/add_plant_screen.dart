@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../services/plant_repository.dart';
 
@@ -16,6 +17,10 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _freqCtrl = TextEditingController(text: '7');
+  final _picker = ImagePicker();
+
+  Uint8List _imageBytes = Uint8List(0);
+  bool _picking = false;
 
   @override
   void dispose() {
@@ -24,11 +29,67 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     super.dispose();
   }
 
+  Future<void> _pickFrom(ImageSource source) async {
+    Navigator.of(context).pop();
+    setState(() => _picking = true);
+    try {
+      final picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+      setState(() => _imageBytes = bytes);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not pick image: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _picking = false);
+    }
+  }
+
+  void _openPickerSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from gallery'),
+              onTap: () => _pickFrom(ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera),
+              title: const Text('Take a photo'),
+              onTap: () => _pickFrom(ImageSource.camera),
+            ),
+            if (_imageBytes.isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.delete_outline),
+                title: const Text('Remove photo'),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  setState(() => _imageBytes = Uint8List(0));
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _save() {
     if (!_formKey.currentState!.validate()) return;
     widget.repository.create(
       name: _nameCtrl.text.trim(),
-      imagePath: '',
+      imageBytes: _imageBytes,
       frequencyDays: int.parse(_freqCtrl.text.trim()),
     );
     Navigator.of(context).pop();
@@ -45,25 +106,10 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                height: 160,
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                alignment: Alignment.center,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.image_outlined,
-                        size: 48, color: Colors.green.shade300),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Photo upload coming next',
-                      style: TextStyle(color: Colors.green.shade700),
-                    ),
-                  ],
-                ),
+              _PhotoPickerBox(
+                bytes: _imageBytes,
+                busy: _picking,
+                onTap: _openPickerSheet,
               ),
               const SizedBox(height: 20),
               TextFormField(
@@ -104,6 +150,69 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PhotoPickerBox extends StatelessWidget {
+  const _PhotoPickerBox({
+    required this.bytes,
+    required this.busy,
+    required this.onTap,
+  });
+
+  final Uint8List bytes;
+  final bool busy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: busy ? null : onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green.shade200),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: busy
+            ? const Center(child: CircularProgressIndicator())
+            : bytes.isNotEmpty
+                ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.memory(bytes, fit: BoxFit.cover),
+                      Positioned(
+                        right: 8,
+                        bottom: 8,
+                        child: Material(
+                          color: Colors.black54,
+                          shape: const CircleBorder(),
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(Icons.edit,
+                                size: 18, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_a_photo_outlined,
+                          size: 48, color: Colors.green.shade400),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tap to add a photo',
+                        style: TextStyle(color: Colors.green.shade700),
+                      ),
+                    ],
+                  ),
       ),
     );
   }

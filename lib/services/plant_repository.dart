@@ -21,13 +21,13 @@ class PlantRepository extends ChangeNotifier {
 
   Plant create({
     required String name,
-    required String imagePath,
+    required Uint8List imageBytes,
     required int frequencyDays,
   }) {
     final plant = Plant(
       id: _uuid.v4(),
       name: name,
-      imagePath: imagePath,
+      imageBytes: imageBytes,
       frequencyDays: frequencyDays,
       lastWatered: _midnight(DateTime.now()),
     );
