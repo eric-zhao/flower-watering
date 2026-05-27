@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../i18n/strings.dart';
 import '../services/plant_repository.dart';
+import '../widgets/adaptive_image.dart';
 
 class AddPlantScreen extends StatefulWidget {
   const AddPlantScreen({super.key, required this.repository});
@@ -169,51 +170,65 @@ class _PhotoPickerBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: busy ? null : onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
+    if (busy) {
+      return Container(
         height: 200,
         decoration: BoxDecoration(
           color: Colors.green.shade50,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.green.shade200),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: busy
-            ? const Center(child: CircularProgressIndicator())
-            : bytes.isNotEmpty
-                ? Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.memory(bytes, fit: BoxFit.cover),
-                      const Positioned(
-                        right: 8,
-                        bottom: 8,
-                        child: Material(
-                          color: Colors.black54,
-                          shape: CircleBorder(),
-                          child: Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(Icons.edit,
-                                size: 18, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add_a_photo_outlined,
-                          size: 48, color: Colors.green.shade400),
-                      const SizedBox(height: 8),
-                      Text(
-                        S.tapToAddPhoto,
-                        style: TextStyle(color: Colors.green.shade700),
-                      ),
-                    ],
-                  ),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (bytes.isEmpty) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          height: 200,
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.green.shade200),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add_a_photo_outlined,
+                  size: 48, color: Colors.green.shade400),
+              const SizedBox(height: 8),
+              Text(
+                S.tapToAddPhoto,
+                style: TextStyle(color: Colors.green.shade700),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Stack(
+        children: [
+          AdaptiveImage(bytes: bytes),
+          const Positioned(
+            right: 8,
+            bottom: 8,
+            child: Material(
+              color: Colors.black54,
+              shape: CircleBorder(),
+              child: Padding(
+                padding: EdgeInsets.all(8),
+                child:
+                    Icon(Icons.edit, size: 18, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -7,6 +7,7 @@ import '../i18n/strings.dart';
 import '../models/plant.dart';
 import '../services/plant_repository.dart';
 import '../services/settings_service.dart';
+import '../widgets/adaptive_image.dart';
 import '../widgets/water_level_bar.dart';
 
 class PlantDetailScreen extends StatefulWidget {
@@ -237,15 +238,6 @@ class _HeroImage extends StatelessWidget {
             size: 96, color: Colors.green.shade300),
       );
     }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Image.memory(
-        bytes,
-        height: 220,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        gaplessPlayback: true,
-      ),
-    );
+    return AdaptiveImage(bytes: bytes);
   }
 }
