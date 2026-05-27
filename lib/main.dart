@@ -1,30 +1,43 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
+import 'i18n/strings.dart';
 import 'models/plant.dart';
 import 'screens/home_screen.dart';
 import 'services/plant_repository.dart';
+import 'services/settings_service.dart';
 
-const _boxName = 'plants';
+const _plantsBox = 'plants';
+const _settingsBox = 'settings';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   Hive.registerAdapter(PlantAdapter());
-  final box = await _openOrReset();
-  if (kDebugMode && box.isEmpty) {
-    _seedDemoPlants(box);
+  await initializeDateFormatting('zh_CN');
+  await initializeDateFormatting('en');
+
+  final settingsBox = await Hive.openBox(_settingsBox);
+  final settings = SettingsService(settingsBox);
+  SettingsService.register(settings);
+
+  final plantsBox = await _openOrReset();
+  final repo = PlantRepository(plantsBox, settings);
+  if (kDebugMode && plantsBox.isEmpty) {
+    _seedDemoPlants(plantsBox);
   }
-  runApp(FlowerWateringApp(repository: PlantRepository(box)));
+
+  runApp(FlowerWateringApp(settings: settings, repository: repo));
 }
 
 Future<Box<Plant>> _openOrReset() async {
   try {
-    return await Hive.openBox<Plant>(_boxName);
+    return await Hive.openBox<Plant>(_plantsBox);
   } catch (_) {
-    await Hive.deleteBoxFromDisk(_boxName);
-    return await Hive.openBox<Plant>(_boxName);
+    await Hive.deleteBoxFromDisk(_plantsBox);
+    return await Hive.openBox<Plant>(_plantsBox);
   }
 }
 
@@ -34,24 +47,33 @@ void _seedDemoPlants(Box<Plant> box) {
   final demos = [
     Plant(
       id: 'demo-rosemary',
-      name: 'Rosemary',
+      name: '迷迭香',
       imageBytes: Uint8List(0),
       frequencyDays: 5,
-      lastWatered: midnight.subtract(const Duration(days: 7)),
+      history: [
+        WateringEntry(
+            date: midnight.subtract(const Duration(days: 7)), by: ''),
+      ],
     ),
     Plant(
       id: 'demo-money-tree',
-      name: 'Money Tree',
+      name: '发财树',
       imageBytes: Uint8List(0),
       frequencyDays: 10,
-      lastWatered: midnight.subtract(const Duration(days: 7)),
+      history: [
+        WateringEntry(
+            date: midnight.subtract(const Duration(days: 7)), by: ''),
+      ],
     ),
     Plant(
       id: 'demo-aloe',
-      name: 'Aloe Vera',
+      name: '芦荟',
       imageBytes: Uint8List(0),
       frequencyDays: 14,
-      lastWatered: midnight.subtract(const Duration(days: 2)),
+      history: [
+        WateringEntry(
+            date: midnight.subtract(const Duration(days: 2)), by: ''),
+      ],
     ),
   ];
   for (final p in demos) {
@@ -60,19 +82,27 @@ void _seedDemoPlants(Box<Plant> box) {
 }
 
 class FlowerWateringApp extends StatelessWidget {
-  const FlowerWateringApp({super.key, required this.repository});
+  const FlowerWateringApp({
+    super.key,
+    required this.settings,
+    required this.repository,
+  });
 
+  final SettingsService settings;
   final PlantRepository repository;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flower Watering',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-        useMaterial3: true,
+    return ListenableBuilder(
+      listenable: settings,
+      builder: (_, __) => MaterialApp(
+        title: S.appTitle,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+          useMaterial3: true,
+        ),
+        home: HomeScreen(repository: repository, settings: settings),
       ),
-      home: HomeScreen(repository: repository),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../i18n/strings.dart';
 import '../services/plant_repository.dart';
 
 class AddPlantScreen extends StatefulWidget {
@@ -46,7 +47,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not pick image: $e')),
+        SnackBar(content: Text(S.pickerError(e.toString()))),
       );
     } finally {
       if (mounted) setState(() => _picking = false);
@@ -62,18 +63,18 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: const Text('Choose from gallery'),
+              title: Text(S.chooseFromGallery),
               onTap: () => _pickFrom(ImageSource.gallery),
             ),
             ListTile(
               leading: const Icon(Icons.photo_camera),
-              title: const Text('Take a photo'),
+              title: Text(S.takeAPhoto),
               onTap: () => _pickFrom(ImageSource.camera),
             ),
             if (_imageBytes.isNotEmpty)
               ListTile(
                 leading: const Icon(Icons.delete_outline),
-                title: const Text('Remove photo'),
+                title: Text(S.removePhoto),
                 onTap: () {
                   Navigator.of(ctx).pop();
                   setState(() => _imageBytes = Uint8List(0));
@@ -98,7 +99,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Plant')),
+      appBar: AppBar(title: Text(S.addPlant)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -116,12 +117,12 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 controller: _nameCtrl,
                 maxLength: 40,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Plant name',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: S.plantName,
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Required';
+                  if (v == null || v.trim().isEmpty) return S.required;
                   return null;
                 },
               ),
@@ -130,14 +131,14 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 controller: _freqCtrl,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  labelText: 'Water every (days)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: S.waterEveryDays,
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (v) {
                   final n = int.tryParse(v?.trim() ?? '');
-                  if (n == null) return 'Enter a number';
-                  if (n < 1 || n > 365) return 'Between 1 and 365';
+                  if (n == null) return S.enterANumber;
+                  if (n < 1 || n > 365) return S.between1And365;
                   return null;
                 },
               ),
@@ -145,7 +146,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               FilledButton.icon(
                 onPressed: _save,
                 icon: const Icon(Icons.save),
-                label: const Text('Save'),
+                label: Text(S.save),
               ),
             ],
           ),
@@ -186,13 +187,13 @@ class _PhotoPickerBox extends StatelessWidget {
                     fit: StackFit.expand,
                     children: [
                       Image.memory(bytes, fit: BoxFit.cover),
-                      Positioned(
+                      const Positioned(
                         right: 8,
                         bottom: 8,
                         child: Material(
                           color: Colors.black54,
-                          shape: const CircleBorder(),
-                          child: const Padding(
+                          shape: CircleBorder(),
+                          child: Padding(
                             padding: EdgeInsets.all(8),
                             child: Icon(Icons.edit,
                                 size: 18, color: Colors.white),
@@ -208,7 +209,7 @@ class _PhotoPickerBox extends StatelessWidget {
                           size: 48, color: Colors.green.shade400),
                       const SizedBox(height: 8),
                       Text(
-                        'Tap to add a photo',
+                        S.tapToAddPhoto,
                         style: TextStyle(color: Colors.green.shade700),
                       ),
                     ],

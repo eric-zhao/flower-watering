@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import '../i18n/strings.dart';
 import '../models/plant.dart';
 import 'water_level_bar.dart';
 
@@ -24,10 +25,10 @@ class PlantCard extends StatelessWidget {
     final level = plant.waterLevel(now);
 
     final daysLabel = remaining > 0
-        ? '$remaining day${remaining == 1 ? '' : 's'} left'
+        ? S.daysLeft(remaining)
         : remaining == 0
-            ? 'Due today'
-            : 'Overdue by ${-remaining} day${remaining == -1 ? '' : 's'}';
+            ? S.dueToday
+            : S.overdueByDays(-remaining);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -60,7 +61,7 @@ class PlantCard extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.delete_outline),
                 color: Colors.red.shade400,
-                tooltip: 'Delete plant',
+                tooltip: S.deletePlant,
                 onPressed: onDelete,
               ),
             ],

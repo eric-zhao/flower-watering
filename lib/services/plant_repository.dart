@@ -3,11 +3,13 @@ import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/plant.dart';
+import 'settings_service.dart';
 
 class PlantRepository extends ChangeNotifier {
-  PlantRepository(this._box);
+  PlantRepository(this._box, this._settings);
 
   final Box<Plant> _box;
+  final SettingsService _settings;
   final _uuid = const Uuid();
 
   List<Plant> all() {
@@ -24,22 +26,27 @@ class PlantRepository extends ChangeNotifier {
     required Uint8List imageBytes,
     required int frequencyDays,
   }) {
+    final now = _midnight(DateTime.now());
     final plant = Plant(
       id: _uuid.v4(),
       name: name,
       imageBytes: imageBytes,
       frequencyDays: frequencyDays,
-      lastWatered: _midnight(DateTime.now()),
+      history: [WateringEntry(date: now, by: _settings.userName)],
     );
     _box.put(plant.id, plant);
     notifyListeners();
     return plant;
   }
 
+  /// Append a watering entry. Date is normalized to midnight. The current
+  /// user-name setting is attached.
   void markWatered(String id, DateTime date) {
     final plant = _box.get(id);
     if (plant == null) return;
-    plant.lastWatered = _midnight(date);
+    plant.history.add(
+      WateringEntry(date: _midnight(date), by: _settings.userName),
+    );
     _box.put(plant.id, plant);
     notifyListeners();
   }

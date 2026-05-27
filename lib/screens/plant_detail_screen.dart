@@ -3,8 +3,10 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../i18n/strings.dart';
 import '../models/plant.dart';
 import '../services/plant_repository.dart';
+import '../services/settings_service.dart';
 import '../widgets/water_level_bar.dart';
 
 class PlantDetailScreen extends StatefulWidget {
@@ -26,11 +28,13 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
   void initState() {
     super.initState();
     widget.repository.addListener(_onChange);
+    SettingsService.instance.addListener(_onChange);
   }
 
   @override
   void dispose() {
     widget.repository.removeListener(_onChange);
+    SettingsService.instance.removeListener(_onChange);
     super.dispose();
   }
 
@@ -53,20 +57,22 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
   }
 
   Future<void> _confirmDelete() async {
+    final plant = widget.repository.byId(widget.plantId);
+    if (plant == null) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete plant?'),
-        content: const Text('This cannot be undone.'),
+        title: Text(S.deletePlantTitle(plant.name)),
+        content: Text(S.cannotBeUndone),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(S.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: Text(S.delete),
           ),
         ],
       ),
@@ -81,19 +87,20 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
   Widget build(BuildContext context) {
     final plant = widget.repository.byId(widget.plantId);
     if (plant == null) {
-      return const Scaffold(body: Center(child: Text('Plant not found')));
+      return Scaffold(body: Center(child: Text(S.plantNotFound)));
     }
 
     final now = DateTime.now();
     final remaining = plant.remainingDays(now);
     final level = plant.waterLevel(now);
-    final dateFmt = DateFormat.yMMMMd();
+    final locale = SettingsService.instance.language == 'zh' ? 'zh_CN' : 'en';
+    final dateFmt = DateFormat.yMMMMd(locale);
 
     final daysLabel = remaining > 0
-        ? '$remaining day${remaining == 1 ? '' : 's'} until next watering'
+        ? S.daysUntilNext(remaining)
         : remaining == 0
-            ? 'Due today'
-            : 'Overdue by ${-remaining} day${remaining == -1 ? '' : 's'}';
+            ? S.dueToday
+            : S.overdueByDays(-remaining);
 
     return Scaffold(
       appBar: AppBar(
@@ -113,12 +120,13 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
             _HeroImage(bytes: plant.imageBytes),
             const SizedBox(height: 20),
             _InfoRow(
-                icon: Icons.schedule,
-                label: 'Every ${plant.frequencyDays} days'),
+              icon: Icons.schedule,
+              label: S.everyNDays(plant.frequencyDays),
+            ),
             const SizedBox(height: 8),
             _InfoRow(
               icon: Icons.water_drop_outlined,
-              label: 'Last watered: ${dateFmt.format(plant.lastWatered)}',
+              label: S.lastWateredOn(dateFmt.format(plant.lastWatered)),
             ),
             const SizedBox(height: 20),
             WaterLevelBar(level: level, height: 20),
@@ -135,19 +143,61 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                   child: FilledButton.icon(
                     onPressed: _markWateredToday,
                     icon: const Icon(Icons.water_drop),
-                    label: const Text('Watered today'),
+                    label: Text(S.wateredToday),
                   ),
                 ),
                 const SizedBox(width: 12),
                 IconButton.filledTonal(
                   onPressed: () => _pickWateredDate(plant),
                   icon: const Icon(Icons.calendar_today),
-                  tooltip: 'Pick a different date',
+                  tooltip: S.pickADate,
                 ),
               ],
             ),
+            const SizedBox(height: 24),
+            _HistorySection(plant: plant, dateFmt: dateFmt),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _HistorySection extends StatelessWidget {
+  const _HistorySection({required this.plant, required this.dateFmt});
+  final Plant plant;
+  final DateFormat dateFmt;
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = plant.sortedHistory();
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        leading: Icon(Icons.history, color: Colors.green.shade700),
+        title: Text(S.waterHistory),
+        subtitle: entries.isEmpty
+            ? Text(S.noHistoryYet)
+            : Text(dateFmt.format(entries.first.date)),
+        children: entries.isEmpty
+            ? [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(S.noHistoryYet),
+                ),
+              ]
+            : entries
+                .map(
+                  (e) => ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.water_drop, size: 18),
+                    title: Text(dateFmt.format(e.date)),
+                    subtitle: Text(
+                      e.by.isEmpty ? S.unknownWaterer : S.byName(e.by),
+                    ),
+                  ),
+                )
+                .toList(),
       ),
     );
   }

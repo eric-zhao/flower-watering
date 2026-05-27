@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
 
+import '../i18n/strings.dart';
 import '../models/plant.dart';
 import '../services/plant_repository.dart';
+import '../services/settings_service.dart';
 import '../widgets/plant_card.dart';
 import 'add_plant_screen.dart';
 import 'plant_detail_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.repository});
+  const HomeScreen({
+    super.key,
+    required this.repository,
+    required this.settings,
+  });
 
   final PlantRepository repository;
+  final SettingsService settings;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -49,21 +57,29 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _openSettings() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SettingsScreen(settings: widget.settings),
+      ),
+    );
+  }
+
   Future<void> _confirmDelete(Plant plant) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Delete ${plant.name}?'),
-        content: const Text('This cannot be undone.'),
+        title: Text(S.deletePlantTitle(plant.name)),
+        content: Text(S.cannotBeUndone),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(S.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: Text(S.delete),
           ),
         ],
       ),
@@ -78,7 +94,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final plants = widget.repository.all();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My Plants')),
+      appBar: AppBar(
+        title: Text(S.myPlants),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: S.settings,
+            onPressed: _openSettings,
+          ),
+        ],
+      ),
       body: plants.isEmpty
           ? const _EmptyState()
           : RefreshIndicator(
@@ -117,11 +142,11 @@ class _EmptyState extends StatelessWidget {
               size: 64, color: Colors.green.shade200),
           const SizedBox(height: 12),
           Text(
-            'No plants yet',
+            S.noPlantsYet,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 6),
-          const Text('Tap + to add your first plant'),
+          Text(S.tapPlusToAdd),
         ],
       ),
     );
